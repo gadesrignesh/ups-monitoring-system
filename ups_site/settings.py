@@ -9,16 +9,24 @@ import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# SECURITY
-SECRET_KEY = 'django-insecure-ga5hs+%mdyzl^vr$iy=itl)wzfo)0(-^9z7x-kx@ptu_%h0+3p'
+# =========================
+# SECURITY SETTINGS
+# =========================
 
-# IMPORTANT FOR DEPLOYMENT
-DEBUG = False
+# Get secret key from Render environment
+SECRET_KEY = os.environ.get("SECRET_KEY")
 
-ALLOWED_HOSTS = ['*']
+# Debug from environment (must be string comparison)
+DEBUG = os.environ.get("DEBUG", "False") == "True"
+
+# Allowed hosts from environment (comma separated)
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",")
 
 
+# =========================
 # APPLICATIONS
+# =========================
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -30,7 +38,10 @@ INSTALLED_APPS = [
 ]
 
 
+# =========================
 # MIDDLEWARE
+# =========================
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -45,7 +56,10 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'ups_site.urls'
 
 
+# =========================
 # TEMPLATES
+# =========================
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -66,7 +80,10 @@ TEMPLATES = [
 WSGI_APPLICATION = 'ups_site.wsgi.application'
 
 
-# DATABASE (SQLite works fine for hackathon)
+# =========================
+# DATABASE
+# =========================
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -75,7 +92,10 @@ DATABASES = {
 }
 
 
+# =========================
 # PASSWORD VALIDATION
+# =========================
+
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -84,17 +104,26 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
+# =========================
 # INTERNATIONAL
+# =========================
+
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
 
-# STATIC FILES (VERY IMPORTANT FOR RENDER)
+# =========================
+# STATIC FILES (IMPORTANT FOR RENDER)
+# =========================
+
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 
+# =========================
 # DEFAULT PRIMARY KEY
+# =========================
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
