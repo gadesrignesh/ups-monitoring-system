@@ -1,0 +1,1 @@
+web: gunicorn ups_site.wsgi

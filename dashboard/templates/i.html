@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scan Spectrum | 3D AI Workspace</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+    darkMode: 'class',
+    theme: { extend: { fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] } } }
+}
+</script>
+
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+body {
+    background-color:#f8fafc;
+    color:#0f172a;
+    overflow:hidden;
+}
+.dark body {
+    background-color:#050505;
+    color:#e2e8f0;
+}
+.tab-content,.view-section{display:none}
+.tab-content.active,.view-section.active{display:block}
+.glass-panel{
+    background:rgba(255,255,255,0.8);
+    backdrop-filter:blur(16px);
+}
+.dark .glass-panel{
+    background:rgba(20,20,22,0.7);
+}
+</style>
+</head>
+
+<body class="h-screen w-screen flex flex-col text-sm">
+
+<!-- ================= NAVIGATION ================= -->
+<nav class="h-16 glass-panel flex items-center justify-between px-6 shrink-0">
+
+    <div class="flex items-center space-x-3 w-48">
+        <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+            <i data-lucide="scan-line" class="text-white w-5 h-5"></i>
+        </div>
+        <span class="text-lg font-bold">Scan Spectrum</span>
+    </div>
+
+    <!-- ONLY HOME + STUDIO -->
+    <div class="hidden md:flex items-center space-x-1 bg-slate-100 dark:bg-black/40 p-1 rounded-xl">
+        <button onclick="switchMainView('home')" id="nav-home"
+            class="px-5 py-2 text-sm font-medium rounded-lg bg-white dark:bg-indigo-600 shadow-sm text-indigo-600 dark:text-white">
+            Home
+        </button>
+
+        <button onclick="switchMainView('studio')" id="nav-studio"
+            class="px-5 py-2 text-sm font-medium rounded-lg text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white">
+            Studio
+        </button>
+    </div>
+
+    <div class="flex items-center space-x-4 w-48 justify-end">
+        <button onclick="toggleTheme()" class="w-9 h-9 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center">
+            <i data-lucide="moon" id="theme-icon" class="w-4 h-4"></i>
+        </button>
+    </div>
+</nav>
+
+<!-- ================= MAIN ================= -->
+<main class="flex-1 overflow-hidden relative">
+
+<!-- ================= HOME ================= -->
+<section id="view-home" class="view-section active h-full w-full overflow-y-auto p-10">
+    <div class="max-w-4xl mx-auto text-center mt-20">
+        <h1 class="text-5xl font-extrabold mb-6">
+            Turn Learning into
+            <span class="bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
+                Dimensions
+            </span>
+        </h1>
+
+        <p class="text-lg text-slate-600 dark:text-slate-400 mb-10">
+            Convert textbooks and concepts into interactive 3D models with AI.
+        </p>
+
+        <button onclick="switchMainView('studio')"
+            class="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-semibold">
+            Start Creating
+        </button>
+    </div>
+</section>
+
+<!-- ================= STUDIO ================= -->
+<section id="view-studio" class="view-section h-full flex">
+
+<!-- LEFT PANEL -->
+<aside class="w-80 glass-panel flex flex-col shrink-0">
+
+    <div class="p-4 border-b">
+        <h2 class="font-semibold flex items-center space-x-2">
+            <i data-lucide="wand-2" class="w-4 h-4"></i>
+            <span>Creation Studio</span>
+        </h2>
+    </div>
+
+    <div class="p-4 flex-1 overflow-y-auto space-y-4">
+
+        <!-- TEXT MODE -->
+        <div>
+            <label class="block text-xs mb-2">Subject Description</label>
+            <textarea id="prompt-input" rows="4"
+                class="w-full bg-white dark:bg-black/40 border rounded-lg p-3 text-sm resize-none"
+                placeholder="Describe your 3D model..."></textarea>
+        </div>
+
+        <button onclick="generateModel()" id="generate-btn"
+            class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-sm">
+            Generate 3D Model
+        </button>
+    </div>
+</aside>
+
+<!-- VIEWPORT -->
+<section class="flex-1 flex items-center justify-center relative bg-slate-100 dark:bg-[#111]">
+
+    <!-- EMPTY -->
+    <div id="empty-state" class="text-center opacity-60">
+        <i data-lucide="box-select" class="w-16 h-16 mx-auto mb-4"></i>
+        <p>Workspace is empty</p>
+    </div>
+
+    <!-- PROCESSING -->
+    <div id="processing-state" class="hidden text-center">
+        <i data-lucide="loader-2" class="w-10 h-10 animate-spin mx-auto mb-4"></i>
+        <p>Synthesizing Model...</p>
+    </div>
+
+    <!-- GENERATED -->
+    <div id="generated-state" class="hidden text-center">
+        <img src="https://images.unsplash.com/photo-1530026405186-ed1f139313f8?auto=format&fit=crop&q=80&w=400"
+            class="w-64 h-64 rounded-full object-cover mx-auto">
+        <p class="mt-4 font-semibold">Model Generated</p>
+    </div>
+
+</section>
+</section>
+</main>
+
+<!-- ================= SCRIPT ================= -->
+<script>
+lucide.createIcons();
+
+function toggleTheme(){
+    const html=document.documentElement;
+    const icon=document.getElementById('theme-icon');
+
+    if(html.classList.contains('dark')){
+        html.classList.remove('dark');
+        icon.setAttribute('data-lucide','sun');
+    }else{
+        html.classList.add('dark');
+        icon.setAttribute('data-lucide','moon');
+    }
+    lucide.createIcons();
+}
+
+function switchMainView(viewId){
+    document.querySelectorAll('.view-section').forEach(el=>el.classList.remove('active'));
+
+    const navIds=['nav-home','nav-studio'];
+    navIds.forEach(id=>{
+        const btn=document.getElementById(id);
+        btn.className="px-5 py-2 text-sm font-medium rounded-lg text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white";
+    });
+
+    document.getElementById(`view-${viewId}`).classList.add('active');
+
+    const activeBtn=document.getElementById(`nav-${viewId}`);
+    activeBtn.className="px-5 py-2 text-sm font-medium rounded-lg bg-white dark:bg-indigo-600 shadow-sm text-indigo-600 dark:text-white";
+}
+
+function generateModel(){
+    const input=document.getElementById('prompt-input').value;
+    if(!input){
+        alert("Please enter a description.");
+        return;
+    }
+
+    document.getElementById('empty-state').classList.add('hidden');
+    document.getElementById('generated-state').classList.add('hidden');
+    document.getElementById('processing-state').classList.remove('hidden');
+
+    setTimeout(()=>{
+        document.getElementById('processing-state').classList.add('hidden');
+        document.getElementById('generated-state').classList.remove('hidden');
+    },2000);
+}
+</script>
+
+</body>
+</html>

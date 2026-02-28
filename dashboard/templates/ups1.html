@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>UPS 1 Dashboard</title>
+
+<style>
+
+body{
+margin:0;
+font-family:'Segoe UI',sans-serif;
+background:linear-gradient(to right,#eef2f7,#dde7f0);
+}
+
+/* HEADER */
+.header{
+padding:18px;
+text-align:center;
+font-weight:600;
+font-size:20px;
+background:white;
+box-shadow:0 4px 12px rgba(0,0,0,.08);
+}
+
+/* MAIN CARD */
+.main{
+max-width:1000px;
+margin:40px auto;
+padding:25px;
+border-radius:22px;
+background:linear-gradient(180deg,#0f3d1e,#062412);
+color:white;
+box-shadow:0 15px 40px rgba(0,0,0,.25);
+}
+
+/* TOP */
+.top{
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.badge{
+background:black;
+padding:8px 16px;
+border-radius:14px;
+font-weight:600;
+}
+
+/* STATUS */
+.status{
+text-align:center;
+font-size:22px;
+font-weight:700;
+margin:18px 0;
+display:flex;
+justify-content:center;
+align-items:center;
+gap:10px;
+}
+
+.status-dot{
+width:14px;
+height:14px;
+border-radius:50%;
+background:#22c55e;
+animation:pulse 1.5s infinite;
+}
+
+@keyframes pulse{
+50%{transform:scale(1.3);opacity:.7;}
+}
+
+/* PANELS */
+.panels{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:22px;
+}
+
+.panel{
+background:rgba(0,0,0,.55);
+padding:18px;
+border-radius:16px;
+backdrop-filter:blur(6px);
+}
+
+.panel h4{
+text-align:center;
+margin-top:0;
+border-bottom:1px solid rgba(255,255,255,.2);
+padding-bottom:8px;
+}
+
+.row{
+display:flex;
+justify-content:space-between;
+margin:8px 0;
+font-size:15px;
+}
+
+/* BOTTOM */
+.bottom{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:22px;
+margin-top:25px;
+}
+
+.box{
+background:rgba(0,0,0,.6);
+border-radius:16px;
+padding:20px;
+text-align:center;
+}
+
+/* BATTERY */
+.bar{
+height:16px;
+background:#222;
+border-radius:12px;
+overflow:hidden;
+margin-top:10px;
+}
+
+.level{
+height:100%;
+width:0%;
+transition:.8s;
+border-radius:12px;
+}
+
+/* ALERT */
+#alertBox{
+position:fixed;
+top:25px;
+right:25px;
+background:#dc2626;
+color:white;
+padding:20px 30px;
+border-radius:16px;
+font-weight:600;
+z-index:9999;
+box-shadow:0 0 25px red;
+animation:blinkAlert 1s infinite;
+}
+
+@keyframes blinkAlert{
+50%{opacity:.6;}
+}
+
+</style>
+</head>
+
+<body>
+
+{% if violation %}
+<div id="alertBox">
+⚠ NO LOAD AS PER SCHEDULE  
+But Power is Being Consumed!
+</div>
+
+<audio autoplay>
+  <source src="https://www.soundjay.com/buttons/sounds/beep-07.mp3" type="audio/mpeg">
+</audio>
+{% endif %}
+
+<div class="header">
+SMART AI UPS MONITORING SYSTEM
+</div>
+
+<div class="main">
+
+<div class="top">
+<div class="badge">UPS01</div>
+<div>{{now}}</div>
+</div>
+
+<div class="status">
+<div class="status-dot"></div>
+<div>{{status}}</div>
+</div>
+
+<div class="panels">
+
+<div class="panel">
+<h4>GRID INPUT</h4>
+<div class="row"><span>Voltage</span><span>{{g_voltage}}</span></div>
+<div class="row"><span>Current</span><span>{{g_current}}</span></div>
+<div class="row"><span>Power</span><span>{{g_power}}</span></div>
+<div class="row"><span>Energy</span><span>{{g_energy}}</span></div>
+<div class="row"><span>Frequency</span><span>{{g_frequency}}</span></div>
+<div class="row"><span>Power Factor</span><span>{{g_pf}}</span></div>
+</div>
+
+<div class="panel">
+<h4>UPS OUTPUT</h4>
+<div class="row"><span>Voltage</span><span>{{u_voltage}}</span></div>
+<div class="row"><span>Current</span><span>{{u_current}}</span></div>
+<div class="row"><span>Power</span><span>{{u_power}}</span></div>
+<div class="row"><span>Energy</span><span>{{u_energy}}</span></div>
+<div class="row"><span>Frequency</span><span>{{u_frequency}}</span></div>
+<div class="row"><span>Power Factor</span><span>{{u_pf}}</span></div>
+</div>
+
+</div>
+
+<div class="bottom">
+
+<div class="box">
+BACKUP TIME<br><br>
+<strong>45 MIN</strong>
+</div>
+
+<div class="box">
+BATTERY {{battery}}%
+<div class="bar">
+<div id="bat" class="level" data="{{battery}}"></div>
+</div>
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+var batteryValue = parseFloat("{{ battery|default:'0' }}");
+var bar = document.getElementById("bat");
+
+if(bar){
+    bar.style.width = batteryValue + "%";
+
+    if(batteryValue > 60){
+        bar.style.background="linear-gradient(90deg,#22c55e,#16a34a)";
+    }
+    else if(batteryValue > 30){
+        bar.style.background="linear-gradient(90deg,#facc15,#f59e0b)";
+    }
+    else{
+        bar.style.background="linear-gradient(90deg,#ef4444,#dc2626)";
+    }
+}
+
+// Auto refresh
+setTimeout(function(){
+    location.reload();
+},6000);
+
+// Auto hide alert
+setTimeout(function(){
+   var alert=document.getElementById("alertBox");
+   if(alert){ alert.style.display="none"; }
+},8000);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart AI UPS | Dashboard</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --accent-green: #10b981;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-orange: #f59e0b;
+            --accent-red: #ef4444;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: radial-gradient(circle at top right, #1e293b, #0f172a);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* HEADER */
+        .topbar {
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        /* THE 3-BAR MENU BUTTON */
+        .menu-icon {
+            position: absolute;
+            left: 20px; /* Moves it to the left side as per your original layout */
+            font-size: 28px;
+            cursor: pointer;
+            color: white;
+            z-index: 200;
+            transition: 0.3s;
+        }
+
+        .menu-icon:hover {
+            color: var(--accent-blue);
+        }
+
+        /* SIDEBAR / POP-UP MENU */
+        .sidemenu {
+            position: fixed;
+            top: 0;
+            left: -280px; /* Hidden by default */
+            width: 280px;
+            height: 100%;
+            background: rgba(2, 6, 23, 0.98);
+            backdrop-filter: blur(20px);
+            padding-top: 80px;
+            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 150;
+            border-right: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+        }
+
+        /* Active state for the pop-up */
+        .sidemenu.active {
+            left: 0;
+        }
+
+        .sidemenu a {
+            display: flex;
+            align-items: center;
+            padding: 18px 30px;
+            color: #cbd5e1;
+            text-decoration: none;
+            font-size: 16px;
+            transition: 0.3s;
+            border-left: 3px solid transparent;
+        }
+
+        .sidemenu a:hover {
+            color: white;
+            background: rgba(255,255,255,0.05);
+            border-left: 3px solid var(--accent-blue);
+        }
+
+        /* DASHBOARD CONTENT */
+        .dashboard-container {
+            padding: 40px 20px;
+            max-width: 1200px;
+            margin: auto;
+            transition: 0.4s;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+        }
+
+        /* UPS CARD */
+        .ups-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .ups-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .status-badge {
+            font-size: 10px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+
+        .charge-area {
+            display: flex;
+            align-items: baseline;
+            gap: 5px;
+        }
+
+        .charge-percent {
+            font-size: 2.5rem;
+            font-weight: 300;
+        }
+
+        /* COLORS */
+        .ups-1 { border-left: 5px solid var(--accent-green); }
+        .ups-1 .status-badge { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
+
+        .ups-2 { border-left: 5px solid var(--accent-blue); }
+        .ups-2 .status-badge { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
+
+        .ups-3 { border-left: 5px solid var(--accent-purple); }
+        .ups-3 .status-badge { background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); }
+
+        .ups-4 { border-left: 5px solid var(--accent-orange); }
+        .ups-4 .status-badge { background: rgba(245, 158, 11, 0.15); color: var(--accent-orange); }
+
+        .ups-5 { border-left: 5px solid var(--accent-red); }
+        .ups-5 .status-badge { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
+
+        /* OVERLAY when menu is open */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.4);
+            display: none;
+            z-index: 140;
+        }
+        .overlay.active { display: block; }
+
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay" onclick="toggle()"></div>
+    <div class="sidemenu" id="menu">
+        <a href="#">📞 Contact Us</a>
+        <a href="#">🤖 AI Recommendations</a>
+        <a href="#">⚙ Settings</a>
+        <a href="#">📊 System Logs</a>
+    </div>
+
+    <div class="topbar">
+        <div class="menu-icon" onclick="toggle()">☰</div>
+        SMART AI UPS MONITORING SYSTEM
+    </div>
+
+    <div class="dashboard-container">
+        <div class="grid">
+            <div class="ups-card ups-1" onclick="openUPS()">
+                <div class="card-header">
+                    <span>🔋 UPS 01</span>
+                    <span class="status-badge">Optimal</span>
+                </div>
+                <div class="charge-area">
+                    <span class="charge-percent">98%</span>
+                    <span style="color:var(--text-dim)">Battery</span>
+                </div>
+            </div>
+
+            <div class="ups-card ups-2">
+                <div class="card-header">
+                    <span>🔋 UPS 02</span>
+                    <span class="status-badge">Charging</span>
+                </div>
+                <div class="charge-area">
+                    <span class="charge-percent">75%</span>
+                    <span style="color:var(--text-dim)">Battery</span>
+                </div>
+            </div>
+
+            <div class="ups-card ups-3">
+                <div class="card-header">
+                    <span>🔋 UPS 03</span>
+                    <span class="status-badge">Standby</span>
+                </div>
+                <div class="charge-area">
+                    <span class="charge-percent">50%</span>
+                    <span style="color:var(--text-dim)">Battery</span>
+                </div>
+            </div>
+
+            <div class="ups-card ups-4">
+                <div class="card-header">
+                    <span>🔋 UPS 04</span>
+                    <span class="status-badge">Warning</span>
+                </div>
+                <div class="charge-area">
+                    <span class="charge-percent">25%</span>
+                    <span style="color:var(--text-dim)">Battery</span>
+                </div>
+            </div>
+
+            <div class="ups-card ups-5">
+                <div class="card-header">
+                    <span>🔋 UPS 05</span>
+                    <span class="status-badge">Critical</span>
+                </div>
+                <div class="charge-area">
+                    <span class="charge-percent">10%</span>
+                    <span style="color:var(--text-dim)">Battery</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggle() {
+            const menu = document.getElementById("menu");
+            const overlay = document.getElementById("overlay");
+            menu.classList.toggle("active");
+            overlay.classList.toggle("active");
+        }
+
+        function openUPS() {
+            window.location.href = "/ups1";
+        }
+    </script>
+</body>
+</html>

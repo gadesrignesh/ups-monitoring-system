@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scan Spectrum | 3D AI Workspace</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8fafc;
+            color: #0f172a;
+            overflow: hidden; /* App-like feel, no scrolling on body */
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+       
+        .dark body {
+            background-color: #050505;
+            color: #e2e8f0;
+        }
+       
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #333; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .dark ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        /* Glass Panels with Theme Support */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        .dark .glass-panel {
+            background: rgba(20, 20, 22, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Viewport Background */
+        .viewport-bg {
+            background: radial-gradient(circle at 50% 50%, #f1f5f9 0%, #e2e8f0 100%);
+            position: relative;
+        }
+        .dark .viewport-bg {
+            background: radial-gradient(circle at 50% 50%, #1a1a24 0%, #050505 100%);
+        }
+
+        /* 3D Grid Floor Effect */
+        .grid-floor {
+            position: absolute;
+            bottom: -20%;
+            left: -50%;
+            width: 200%;
+            height: 100%;
+            background-image:
+                linear-gradient(to right, rgba(99, 102, 241, 0.2) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(99, 102, 241, 0.2) 1px, transparent 1px);
+            background-size: 40px 40px;
+            transform: perspective(600px) rotateX(75deg);
+            pointer-events: none;
+            mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 80%);
+            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 80%);
+        }
+        .dark .grid-floor {
+            background-image:
+                linear-gradient(to right, rgba(99, 102, 241, 0.1) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(99, 102, 241, 0.1) 1px, transparent 1px);
+        }
+
+        .btn-glow {
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+            transition: all 0.3s ease;
+        }
+        .btn-glow:hover {
+            box-shadow: 0 0 25px rgba(99, 102, 241, 0.5);
+            transform: translateY(-1px);
+        }
+
+        /* Transitions */
+        .tab-content, .view-section { display: none; }
+        .tab-content.active, .view-section.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Floating Animation */
+        .floating { animation: float 6s ease-in-out infinite; }
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(2deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+
+        /* Advanced Chart Animations */
+        .chart-line { stroke-dasharray: 2000; stroke-dashoffset: 2000; animation: drawLine 2.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+        .chart-area { opacity: 0; animation: fadeInArea 2s ease-out 0.8s forwards; }
+        @keyframes drawLine { to { stroke-dashoffset: 0; } }
+        @keyframes fadeInArea { to { opacity: 1; } }
+       
+        .donut-segment { animation: fadeScale 1s cubic-bezier(0.4, 0, 0.2, 1) forwards; transform-origin: center; opacity: 0; transform: scale(0.8); }
+        .donut-segment:nth-child(2) { animation-delay: 0.2s; }
+        .donut-segment:nth-child(3) { animation-delay: 0.4s; }
+        .donut-segment:nth-child(4) { animation-delay: 0.6s; }
+        @keyframes fadeScale { to { opacity: 1; transform: scale(1); } }
+
+        .bar-anim { animation: growWidth 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; transform-origin: left; }
+        @keyframes growWidth { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+        /* Impact Charts Animations */
+        @keyframes progress { from { stroke-dasharray: 0 100; } }
+        .circular-chart { display: block; max-width: 100%; max-height: 100%; }
+        .circle-bg { fill: none; stroke: rgba(148, 163, 184, 0.2); stroke-width: 3.8; }
+        .dark .circle-bg { stroke: rgba(255, 255, 255, 0.05); }
+        .circle { fill: none; stroke-width: 2.8; stroke-linecap: round; animation: progress 1.5s ease-out forwards; }
+       
+        .bar-anim { animation: growWidth 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; transform-origin: left; }
+        @keyframes growWidth { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+       
+        .bar-anim-path { animation: dash 2s ease-out forwards; }
+        @keyframes dash { to { stroke-dashoffset: 0; } }
+
+        /* Scanline effect */
+        .scanline {
+            position: absolute;
+            width: 100%;
+            height: 4px;
+            background: #6366f1;
+            box-shadow: 0 0 15px #6366f1, 0 0 30px #a855f7;
+            opacity: 0.7;
+            animation: scan 2s linear infinite;
+        }
+        @keyframes scan {
+            0% { top: 0%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col text-sm selection:bg-indigo-500/30">
+
+    <!-- Top Navigation Bar -->
+    <nav class="h-16 glass-panel border-b border-slate-200 dark:border-white/5 flex items-center justify-between px-6 z-50 shrink-0">
+        <!-- Logo -->
+        <div class="flex items-center space-x-3 w-48">
+            <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <i data-lucide="scan-line" class="text-white w-5 h-5"></i>
+            </div>
+            <span class="text-lg font-bold tracking-tight text-slate-800 dark:text-white">Scan Spectrum</span>
+        </div>
+       
+        <!-- Main Navigation Tabs -->
+        <div class="hidden md:flex items-center space-x-1 bg-slate-100 dark:bg-black/40 p-1 rounded-xl border border-slate-200 dark:border-white/5">
+            <button onclick="switchMainView('home')" id="nav-home" class="px-5 py-2 text-sm font-medium rounded-lg bg-white dark:bg-indigo-600 shadow-sm text-indigo-600 dark:text-white transition-all">Home</button>
+            <button onclick="switchMainView('studio')" id="nav-studio" class="px-5 py-2 text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white">Studio</button>
+            <button onclick="switchMainView('library')" id="nav-library" class="px-5 py-2 text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white">Library</button>
+            <button onclick="switchMainView('history')" id="nav-history" class="px-5 py-2 text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white">History</button>
+        </div>
+
+        <!-- Right Controls -->
+        <div class="flex items-center space-x-4 w-48 justify-end">
+            <button onclick="toggleTheme()" class="w-9 h-9 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 transition-all border border-slate-200 dark:border-white/5">
+                <i data-lucide="moon" id="theme-icon" class="w-4 h-4"></i>
+            </button>
+            <button class="px-4 py-1.5 glass-panel hover:bg-slate-100 dark:hover:bg-white/10 text-slate-800 dark:text-white rounded-md text-xs font-medium transition-all flex items-center space-x-2 border border-slate-200 dark:border-white/10">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                <span>Export</span>
+            </button>
+            <button class="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-md">
+                <span class="text-xs font-bold text-white">JD</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- App Content Wrapper -->
+    <main class="flex-1 overflow-hidden relative">
+
+        <!-- ================= HOME VIEW ================= -->
+        <section id="view-home" class="view-section active h-full w-full overflow-y-auto bg-slate-50 dark:bg-[#050505] p-8">
+            <div class="max-w-5xl mx-auto mt-4 pb-20">
+               
+                <!-- Hero Section Adapted to Light/Dark Workspace -->
+                <div class="text-center mb-16 pt-8">
+                    <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-indigo-100 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-sm font-medium mb-8">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i>
+                        <span>Next-Gen Easy Learning</span>
+                    </div>
+                    <h1 class="text-5xl md:text-7xl font-extrabold text-slate-900 dark:text-white mb-6 leading-tight">
+                        Turn Learning into <span class="bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">Dimensions</span>
+                    </h1>
+                    <p class="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+                        Break the 2D barrier of traditional education. Convert textbooks, diagrams, and concepts into interactive 3D models with AI-powered visualization.
+                    </p>
+                   
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                        <button onclick="switchMainView('studio')" class="group flex items-center space-x-2 px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-semibold transition-all shadow-xl shadow-indigo-600/30">
+                            <span>Start Creating</span>
+                            <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+                        </button>
+                        <button onclick="switchMainView('library')" class="flex items-center space-x-2 px-8 py-4 bg-white dark:bg-black/40 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-2xl font-semibold transition-all hover:bg-slate-50 dark:hover:bg-white/5 shadow-sm">
+                            <i data-lucide="book-open" class="w-5 h-5"></i>
+                            <span>Explore Library</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Executive Analytics Dashboard -->
+                <div class="mt-16 mb-24 w-full">
+                    <!-- Dashboard Header -->
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                                <i data-lucide="bar-chart-2" class="w-6 h-6 text-indigo-500"></i>
+                                <span>Platform Analytics</span>
+                            </h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Real-time impact metrics and generation efficiency.</p>
+                        </div>
+                        <div class="hidden sm:flex items-center space-x-2 text-xs font-bold bg-white dark:bg-black/30 border border-slate-200 dark:border-white/10 p-1 rounded-lg shadow-sm">
+                            <button class="px-3 py-1.5 bg-slate-100 dark:bg-white/10 text-slate-800 dark:text-white rounded shadow-sm">Global</button>
+                            <button class="px-3 py-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors">Personal</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                       
+                        <!-- Money / ROI Chart (Spans 2 cols) -->
+                        <div class="lg:col-span-2 relative bg-white dark:bg-black/40 rounded-[2rem] p-8 border border-slate-200 dark:border-white/10 shadow-xl overflow-hidden group hover:border-emerald-500/50 dark:hover:border-emerald-500/50 transition-colors">
+                            <div class="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl group-hover:bg-emerald-500/10 transition-colors pointer-events-none"></div>
+                           
+                            <div class="flex flex-col sm:flex-row justify-between sm:items-start mb-6 relative z-10 gap-4">
+                                <div>
+                                    <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-400/10 px-2 py-1 rounded tracking-wider uppercase">Financial Impact</span>
+                                    <h3 class="text-xl font-bold text-slate-900 dark:text-white mt-3">Cumulative Cost Savings</h3>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Comparing traditional 3D outsourcing vs. Scan Spectrum AI</p>
+                                </div>
+                                <div class="sm:text-right">
+                                    <div class="text-4xl font-black text-emerald-500 dark:text-emerald-400">$2.4M</div>
+                                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Saved YTD</div>
+                                </div>
+                            </div>
+
+                            <div class="relative h-56 w-full mt-4">
+                                <!-- Custom SVG Line Chart -->
+                                <svg viewBox="0 0 500 150" preserveAspectRatio="none" class="w-full h-full">
+                                    <defs>
+                                        <linearGradient id="savingsGrad" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stop-color="#10b981" stop-opacity="0.3"/>
+                                            <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+                                        </linearGradient>
+                                        <linearGradient id="costGrad" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stop-color="#ef4444" stop-opacity="0.2"/>
+                                            <stop offset="100%" stop-color="#ef4444" stop-opacity="0"/>
+                                        </linearGradient>
+                                    </defs>
+                                   
+                                    <!-- Traditional Cost -->
+                                    <path d="M 0 140 Q 100 135, 200 100 T 400 40 L 500 10 L 500 150 L 0 150 Z" fill="url(#costGrad)" class="chart-area" />
+                                    <path d="M 0 140 Q 100 135, 200 100 T 400 40 L 500 10" fill="none" stroke="#ef4444" stroke-width="3" stroke-dasharray="4 4" class="chart-line" />
+                                   
+                                    <!-- Scan Spectrum Cost -->
+                                    <path d="M 0 140 Q 100 142, 200 138 T 400 135 L 500 135 L 500 150 L 0 150 Z" fill="url(#savingsGrad)" class="chart-area" />
+                                    <path d="M 0 140 Q 100 142, 200 138 T 400 135 L 500 135" fill="none" stroke="#10b981" stroke-width="4" class="chart-line" />
+                                </svg>
+
+                                <!-- Chart Background Grid & Labels -->
+                                <div class="absolute inset-0 flex flex-col justify-between pointer-events-none pb-6">
+                                    <div class="w-full h-px bg-slate-200 dark:bg-white/5 border-dashed"></div>
+                                    <div class="w-full h-px bg-slate-200 dark:bg-white/5 border-dashed"></div>
+                                    <div class="w-full h-px bg-slate-200 dark:bg-white/5 border-dashed"></div>
+                                </div>
+                                <div class="absolute bottom-0 left-0 w-full flex justify-between text-[10px] text-slate-400 font-bold uppercase px-2 pb-1">
+                                    <span>Q1</span><span>Q2</span><span>Q3</span><span>Q4</span>
+                                </div>
+                            </div>
+                           
+                            <!-- Legend -->
+                            <div class="flex items-center space-x-6 mt-6 relative z-10 border-t border-slate-200 dark:border-white/10 pt-4">
+                                <div class="flex items-center text-xs text-slate-600 dark:text-slate-300 font-medium">
+                                    <div class="w-4 h-1.5 bg-red-500 rounded-full mr-2 shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div> Traditional Agencies
+                                </div>
+                                <div class="flex items-center text-xs text-slate-600 dark:text-slate-300 font-medium">
+                                    <div class="w-4 h-1.5 bg-emerald-500 rounded-full mr-2 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div> Scan Spectrum AI
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Primary Domains Donut -->
+                        <div class="relative bg-white dark:bg-black/40 rounded-[2rem] p-8 border border-slate-200 dark:border-white/10 shadow-xl overflow-hidden group hover:border-blue-500/50 dark:hover:border-blue-500/50 transition-colors">
+                            <div class="absolute top-0 right-0 w-48 h-48 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10 transition-colors pointer-events-none"></div>
+                           
+                            <span class="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-400/10 px-2 py-1 rounded tracking-wider uppercase mb-3 inline-block">Adoption</span>
+                            <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-8">Primary Domains</h3>
+
+                            <div class="flex flex-col items-center justify-center">
+                                <div class="relative w-40 h-40 mb-8">
+                                    <svg viewBox="0 0 36 36" class="w-full h-full transform -rotate-90 drop-shadow-xl">
+                                        <!-- Background Circle -->
+                                        <circle cx="18" cy="18" r="15.915" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-100 dark:text-white/5" />
+                                        <!-- Anatomy (45%) -->
+                                        <circle cx="18" cy="18" r="15.915" fill="none" stroke="#3b82f6" stroke-width="4.5" stroke-dasharray="45 55" stroke-dashoffset="0" class="donut-segment" />
+                                        <!-- Engineering (35%) -->
+                                        <circle cx="18" cy="18" r="15.915" fill="none" stroke="#8b5cf6" stroke-width="4.5" stroke-dasharray="35 65" stroke-dashoffset="-45" class="donut-segment" />
+                                        <!-- Architecture (20%) -->
+                                        <circle cx="18" cy="18" r="15.915" fill="none" stroke="#ec4899" stroke-width="4.5" stroke-dasharray="20 80" stroke-dashoffset="-80" class="donut-segment" />
+                                    </svg>
+                                    <div class="absolute inset-0 flex items-center justify-center flex-col">
+                                        <i data-lucide="layers" class="w-6 h-6 text-slate-400 dark:text-slate-500 mb-1"></i>
+                                        <span class="text-sm font-black text-slate-800 dark:text-white">520k+</span>
+                                    </div>
+                                </div>
+
+                                <div class="w-full space-y-3">
+                                    <div class="flex items-center justify-between text-xs w-full bg-slate-50 dark:bg-white/5 p-2.5 rounded-xl border border-slate-100 dark:border-white/5 transition-colors hover:bg-slate-100 dark:hover:bg-white/10">
+                                        <div class="flex items-center"><div class="w-3 h-3 rounded-full bg-blue-500 mr-3 shadow-[0_0_8px_rgba(59,130,246,0.6)]"></div><span class="text-slate-700 dark:text-slate-300 font-bold">Med / Anatomy</span></div>
+                                        <span class="font-black text-slate-900 dark:text-white">45%</span>
+                                    </div>
+                                    <div class="flex items-center justify-between text-xs w-full bg-slate-50 dark:bg-white/5 p-2.5 rounded-xl border border-slate-100 dark:border-white/5 transition-colors hover:bg-slate-100 dark:hover:bg-white/10">
+                                        <div class="flex items-center"><div class="w-3 h-3 rounded-full bg-violet-500 mr-3 shadow-[0_0_8px_rgba(139,92,246,0.6)]"></div><span class="text-slate-700 dark:text-slate-300 font-bold">Engineering</span></div>
+                                        <span class="font-black text-slate-900 dark:text-white">35%</span>
+                                    </div>
+                                    <div class="flex items-center justify-between text-xs w-full bg-slate-50 dark:bg-white/5 p-2.5 rounded-xl border border-slate-100 dark:border-white/5 transition-colors hover:bg-slate-100 dark:hover:bg-white/10">
+                                        <div class="flex items-center"><div class="w-3 h-3 rounded-full bg-pink-500 mr-3 shadow-[0_0_8px_rgba(236,72,153,0.6)]"></div><span class="text-slate-700 dark:text-slate-300 font-bold">History / Arch.</span></div>
+                                        <span class="font-black text-slate-900 dark:text-white">20%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Time Saved / Generation Velocity (Spans 3 cols to be wide at bottom) -->
+                        <div class="lg:col-span-3 relative bg-gradient-to-br from-indigo-900 via-[#0f172a] to-purple-900 rounded-[2rem] p-8 border border-indigo-500/30 shadow-2xl overflow-hidden group">
+                            <!-- Abstract glowing orbs inside -->
+                            <div class="absolute top-[-50%] left-[-10%] w-96 h-96 bg-indigo-500/30 rounded-full blur-[100px] pointer-events-none"></div>
+                            <div class="absolute bottom-[-50%] right-[-10%] w-96 h-96 bg-purple-500/30 rounded-full blur-[100px] pointer-events-none"></div>
+                           
+                            <div class="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+                                <div class="md:col-span-1">
+                                    <span class="text-[10px] font-bold text-indigo-300 bg-indigo-500/20 px-2 py-1 rounded tracking-wider uppercase mb-3 inline-block border border-indigo-400/30">Velocity</span>
+                                    <h3 class="text-3xl font-bold text-white mb-3 leading-tight">Generation Time Accelerated</h3>
+                                    <p class="text-sm text-indigo-200/80 mb-6 leading-relaxed">Neural Radiance Fields (NeRF) completely bypass traditional manual polygon modeling, resulting in immediate 3D asset deployment for lessons.</p>
+                                    <div class="flex items-center space-x-2 text-emerald-400 font-bold bg-emerald-500/10 w-max px-4 py-2 rounded-xl border border-emerald-500/20 shadow-lg">
+                                        <i data-lucide="zap" class="w-5 h-5"></i>
+                                        <span>98.5% Faster Workflow</span>
+                                    </div>
+                                </div>
+
+                                <div class="md:col-span-2 space-y-6 bg-black/40 p-8 rounded-2xl border border-white/10 backdrop-blur-md shadow-2xl">
+                                    <!-- Manual Time -->
+                                    <div>
+                                        <div class="flex justify-between items-end mb-3">
+                                            <span class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center"><i data-lucide="user" class="w-4 h-4 mr-2"></i> Human Artist Average</span>
+                                            <span class="text-xl font-black text-white">24+ Hours</span>
+                                        </div>
+                                        <div class="w-full h-8 bg-white/5 rounded-xl overflow-hidden border border-white/5 shadow-inner">
+                                            <div class="h-full bg-slate-600 w-full relative overflow-hidden">
+                                                <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTAgNDBsNDAtNDBINjBMMjAgNDBINHoiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiIGZpbGwtcnVsZT0iZXZlbm9kZCIvPjwvc3ZnPg==')] opacity-50"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Scan Spectrum Time -->
+                                    <div>
+                                        <div class="flex justify-between items-end mb-3">
+                                            <span class="text-xs font-bold text-indigo-300 uppercase tracking-widest flex items-center"><i data-lucide="cpu" class="w-4 h-4 mr-2"></i> Scan Spectrum AI</span>
+                                            <span class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">30 Seconds</span>
+                                        </div>
+                                        <div class="w-full h-8 bg-white/5 rounded-xl overflow-hidden border border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.2)_inset]">
+                                            <div class="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 w-[2%] bar-anim relative shadow-[0_0_20px_rgba(168,85,247,0.8)] rounded-r-xl">
+                                                <div class="absolute right-0 top-0 bottom-0 w-2 bg-white blur-[2px] opacity-70"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Personal Dashboard -->
+                <div class="pt-12 border-t border-slate-200 dark:border-white/10">
+                    <h2 class="text-3xl font-bold text-slate-900 dark:text-white mb-2">Welcome back, JD</h2>
+                    <p class="text-slate-500 dark:text-slate-400 mb-8">You've generated 12 models this week. Quick jump:</p>
+                   
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div onclick="switchMainView('studio')" class="bg-white dark:bg-black/40 border border-slate-200 dark:border-white/5 p-6 rounded-2xl cursor-pointer hover:border-indigo-500 transition-all shadow-sm group">
+                            <div class="w-12 h-12 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                <i data-lucide="wand-2" class="w-6 h-6"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">New Generation</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Jump into the studio and convert text or images into 3D assets.</p>
+                        </div>
+                        <div onclick="switchMainView('library')" class="bg-white dark:bg-black/40 border border-slate-200 dark:border-white/5 p-6 rounded-2xl cursor-pointer hover:border-purple-500 transition-all shadow-sm group">
+                            <div class="w-12 h-12 bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                <i data-lucide="library" class="w-6 h-6"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Explore Library</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Browse pre-rendered educational models ready for deployment.</p>
+                        </div>
+                        <div onclick="switchMainView('history')" class="bg-white dark:bg-black/40 border border-slate-200 dark:border-white/5 p-6 rounded-2xl cursor-pointer hover:border-emerald-500 transition-all shadow-sm group">
+                            <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                <i data-lucide="history" class="w-6 h-6"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Recent Activity</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">View and download your previously generated 3D models.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= STUDIO VIEW ================= -->
+        <section id="view-studio" class="view-section h-full flex flex-row overflow-hidden">
+           
+            <!-- Left Sidebar: Generation Studio -->
+            <aside class="w-80 glass-panel border-r border-slate-200 dark:border-white/5 flex flex-col z-40 shrink-0">
+                <div class="p-4 border-b border-slate-200 dark:border-white/5 flex justify-between items-center">
+                    <h2 class="text-slate-800 dark:text-white font-semibold flex items-center space-x-2">
+                        <i data-lucide="wand-2" class="w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                        <span>Creation Studio</span>
+                    </h2>
+                </div>
+
+                <!-- Input Mode Toggles -->
+                <div class="p-4 flex-1 overflow-y-auto">
+                    <div class="bg-slate-100 dark:bg-black/50 p-1 rounded-lg flex space-x-1 mb-6 border border-slate-200 dark:border-white/5">
+                        <button onclick="switchStudioMode('text')" id="mode-text" class="flex-1 py-1.5 text-xs font-medium rounded-md bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow transition-all">Text to 3D</button>
+                        <button onclick="switchStudioMode('image')" id="mode-image" class="flex-1 py-1.5 text-xs font-medium rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-all">Image to 3D</button>
+                    </div>
+
+                    <!-- Domain Selection (New Feature) -->
+                    <div class="mb-5 bg-white dark:bg-black/30 p-3 rounded-xl border border-slate-200 dark:border-white/5">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 flex items-center space-x-2">
+                            <i data-lucide="layers" class="w-3.5 h-3.5 text-indigo-500"></i>
+                            <span>Select Domain Context</span>
+                        </label>
+                        <p class="text-[10px] text-slate-500 dark:text-slate-400 mb-3">Helps the AI accurately interpret structures and materials.</p>
+                       
+                        <div class="grid grid-cols-2 gap-2">
+                            <button class="domain-btn active flex flex-col items-center justify-center p-2 rounded border border-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 transition-all text-[10px] font-bold">
+                                <i data-lucide="activity" class="w-4 h-4 mb-1"></i> Anatomy & Med
+                            </button>
+                            <button class="domain-btn flex flex-col items-center justify-center p-2 rounded border border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 text-slate-600 dark:text-slate-400 transition-all text-[10px] font-bold">
+                                <i data-lucide="cpu" class="w-4 h-4 mb-1"></i> Engineering
+                            </button>
+                            <button class="domain-btn flex flex-col items-center justify-center p-2 rounded border border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 text-slate-600 dark:text-slate-400 transition-all text-[10px] font-bold">
+                                <i data-lucide="building" class="w-4 h-4 mb-1"></i> Architecture
+                            </button>
+                            <button class="domain-btn flex flex-col items-center justify-center p-2 rounded border border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 text-slate-600 dark:text-slate-400 transition-all text-[10px] font-bold">
+                                <i data-lucide="globe" class="w-4 h-4 mb-1"></i> Generic/Art
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Text Mode Content -->
+                    <div id="content-text" class="tab-content active space-y-4">
+                        <div>
+                            
+                            <textarea id="prompt-input" rows="4" class="w-full bg-white dark:bg-black/40 border border-slate-200 dark:border-white/10 rounded-lg p-3 text-slate-800 dark:text-white text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all resize-none placeholder-slate-400 dark:placeholder-slate-600" placeholder="e.g., A detailed anatomical cross-section of a human heart, realistic textures..."></textarea>
+                        </div>
+                        
+                    </div>
+
+                    <!-- Image Mode Content -->
+                    <div id="content-image" class="tab-content space-y-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">Upload Reference Image</label>
+                            <div class="border-2 border-dashed border-slate-300 dark:border-white/10 rounded-lg p-8 text-center hover:border-indigo-500/50 hover:bg-indigo-50 dark:hover:bg-indigo-500/5 transition-all cursor-pointer bg-slate-50 dark:bg-black/20">
+                                <i data-lucide="image-plus" class="w-8 h-8 text-slate-400 dark:text-slate-500 mx-auto mb-2"></i>
+                                <p class="text-xs text-slate-600 dark:text-slate-300 font-medium">Drag & drop image here</p>
+                                <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Supports PNG, JPG (Max 5MB)</p>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">Extrusion Depth / Thickness</label>
+                            <input type="range" class="w-full accent-indigo-500" min="1" max="100" value="50">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-auto p-4 border-t border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-black/20">
+                    <button onclick="generateModel()" id="generate-btn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-sm transition-all flex items-center justify-center space-x-2 btn-glow">
+                        <i data-lucide="zap" class="w-4 h-4"></i>
+                        <span>Generate 3D Model</span>
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Center 3D Viewport -->
+
+
+                <!-- 3D Canvas Area (Mockup) -->
+  
+
+            <!-- Right Sidebar: Mini Library & Analytics -->
+         
+        <!-- ================= LIBRARY VIEW ================= -->
+        <section id="view-library" class="view-section h-full w-full overflow-y-auto bg-slate-50 dark:bg-[#050505] p-6 lg:p-8 relative">
+            <div class="max-w-[1400px] mx-auto min-h-full pb-24">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Gallery</h2>
+                    <div class="relative w-64 hidden md:block">
+                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                        <input type="text" placeholder="Search models..." class="w-full pl-9 pr-4 py-2 rounded-full bg-white dark:bg-[#1a1a1c] border border-slate-200 dark:border-white/5 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 text-sm">
+                    </div>
+                </div>
+
+                <!-- Custom Horizontal Filter Bar -->
+                <div class="flex items-center gap-2 md:gap-3 overflow-x-auto pb-4 mb-4 w-full" style="-ms-overflow-style: none; scrollbar-width: none;">
+                    <style>.scrollbar-hide::-webkit-scrollbar { display: none; }</style>
+                    <button class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-white text-slate-900 rounded-full font-bold text-xs whitespace-nowrap shadow-sm shrink-0">
+                        <i data-lucide="filter" class="w-4 h-4"></i> Filter <i data-lucide="chevron-down" class="w-3 h-3 ml-1"></i>
+                    </button>
+                    <button class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-white text-slate-900 rounded-full font-bold text-xs whitespace-nowrap shadow-sm shrink-0">
+                        <i data-lucide="layout-grid" class="w-4 h-4"></i> All
+                    </button>
+                    <button class="flex items-center gap-2 px-4 py-2 bg-slate-200 dark:bg-[#1a1a1c] hover:bg-slate-300 dark:hover:bg-[#252528] text-slate-800 dark:text-white rounded-full font-medium text-xs whitespace-nowrap transition-colors shrink-0">
+                        <i data-lucide="printer" class="w-4 h-4"></i> 3D Printing
+                    </button>
+                    <button class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-white text-slate-900 rounded-full font-bold text-xs whitespace-nowrap shadow-sm shrink-0">
+                        <i data-lucide="star" class="w-4 h-4"></i> Featured
+                    </button>
+                    <button class="flex items-center gap-2 px-4 py-2 bg-slate-200 dark:bg-[#1a1a1c] hover:bg-slate-300 dark:hover:bg-[#252528] text-slate-800 dark:text-white rounded-full font-medium text-xs whitespace-nowrap transition-colors shrink-0">
+                        <i data-lucide="user" class="w-4 h-4"></i> Character
+                    </button>
+                    <button class="flex items-center gap-2 px-4 py-2 bg-slate-200 dark:bg-[#1a1a1c] hover:bg-slate-300 dark:hover:bg-[#252528] text-slate-800 dark:text-white rounded-full font-medium text-xs whitespace-nowrap transition-colors shrink-0">
+                        <i data-lucide="car" class="w-4 h-4"></i> Vehicle
+                    </button>
+                    <button class="flex items-center gap-2 px-4 py-2 bg-slate-200 dark:bg-[#1a1a1c] hover:bg-slate-300 dark:hover:bg-[#252528] text-slate-800 dark:text-white rounded-full font-medium text-xs whitespace-nowrap transition-colors shrink-0">
+                        <i data-lucide="paw-print" class="w-4 h-4"></i> Animal
+                    </button>
+                    <button class="flex items-center gap-2 px-4 py-2 bg-slate-200 dark:bg-[#1a1a1c] hover:bg-slate-300 dark:hover:bg-[#252528] text-slate-800 dark:text-white rounded-full font-medium text-xs whitespace-nowrap transition-colors shrink-0">
+                        <i data-lucide="building" class="w-4 h-4"></i> Architecture
+                    </button>
+                    <button class="flex items-center gap-2 px-4 py-2 bg-slate-200 dark:bg-[#1a1a1c] hover:bg-slate-300 dark:hover:bg-[#252528] text-slate-800 dark:text-white rounded-full font-medium text-xs whitespace-nowrap transition-colors shrink-0">
+                        <i data-lucide="sofa" class="w-4 h-4"></i> Furniture
+                    </button>
+                    <button class="flex items-center gap-2 px-4 py-2 bg-slate-200 dark:bg-[#1a1a1c] hover:bg-slate-300 dark:hover:bg-[#252528] text-slate-800 dark:text-white rounded-full font-medium text-xs whitespace-nowrap transition-colors shrink-0">
+                        <i data-lucide="box" class="w-4 h-4"></i> Props
+                    </button>
+                    <button class="flex items-center gap-2 px-4 py-2 bg-slate-200 dark:bg-[#1a1a1c] hover:bg-slate-300 dark:hover:bg-[#252528] text-slate-800 dark:text-white rounded-full font-medium text-xs whitespace-nowrap transition-colors shrink-0">
+                        <i data-lucide="sword" class="w-4 h-4"></i> Weapon
+                    </button>
+                   
+                    <button class="ml-auto flex items-center gap-2 px-5 py-2 bg-[#facc15] hover:bg-[#eab308] text-black rounded-full font-extrabold text-xs whitespace-nowrap transition-colors shrink-0 shadow-[0_0_15px_rgba(250,204,21,0.2)] relative">
+                        Feature My Model
+                        <span class="absolute -top-1.5 -right-1.5 bg-black text-[#facc15] text-[9px] px-1.5 py-0.5 rounded-full font-black border border-[#facc15] flex items-center">
+                            +10 <i data-lucide="zap" class="w-2.5 h-2.5 ml-0.5 fill-[#facc15]"></i>
+                        </span>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5" id="main-asset-grid">
+                    <!-- Featured Promo Banner -->
+                    <div class="md:col-span-2 row-span-2 rounded-3xl relative overflow-hidden group aspect-[16/10] md:aspect-auto shadow-lg border border-slate-200 dark:border-white/5">
+                        <img src="https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?auto=format&fit=crop&q=80&w=1200" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent"></div>
+                        <div class="absolute top-5 left-5 bg-black/40 backdrop-blur-md border border-white/10 text-white text-xs px-4 py-1.5 rounded-full shadow-sm">Event</div>
+                        <div class="absolute bottom-10 left-8 right-8 text-center z-10">
+                            <h2 class="text-4xl md:text-5xl lg:text-6xl font-black text-white italic tracking-tight mb-2 uppercase drop-shadow-2xl" style="-webkit-text-stroke: 1px rgba(255,255,255,0.3);">
+                                Game Hub! <span class="text-[#facc15]">IGNITE!</span>
+                            </h2>
+                            <button class="mt-4 bg-[#facc15] hover:bg-[#eab308] text-black font-black text-lg px-8 py-2.5 rounded-full shadow-[0_0_20px_rgba(250,204,21,0.5)] transition-transform hover:scale-105">Get $150,000</button>
+                        </div>
+                       
+                        <!-- Mini pagination dots -->
+                        <div class="absolute bottom-4 left-8 flex space-x-1.5">
+                            <div class="w-1.5 h-1.5 rounded-full bg-white/50"></div>
+                            <div class="w-1.5 h-1.5 rounded-full bg-white/50"></div>
+                            <div class="w-1.5 h-1.5 rounded-full bg-white/50"></div>
+                            <div class="w-2 h-2 rounded-full bg-white translate-y-[ -1px ]"></div>
+                            <div class="w-1.5 h-1.5 rounded-full bg-white/50"></div>
+                            <div class="w-1.5 h-1.5 rounded-full bg-white/50"></div>
+                        </div>
+                    </div>
+                    <!-- Cards will be populated here -->
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================= HISTORY VIEW ================= -->
+        <div class="p-6">
+
+    <!-- HISTORY SECTION -->
+    <section id="view-history" class="view-section active">
+
+        <h1 class="text-2xl font-bold text-slate-800 dark:text-white mb-6">
+             History
+        </h1>
+
+        <!-- Empty State -->
+        <div id="history-empty" class="text-center py-12 text-slate-500 dark:text-slate-400">
+            No models generated yet.
+        </div>
+
+        <!-- History List -->
+        <div id="history-list" class="space-y-4 hidden">
+
+            <!-- Example History Item -->
+            <div class="bg-white dark:bg-slate-800 shadow rounded-lg p-4 flex justify-between items-center">
+                <div>
+                    <p class="font-medium text-slate-800 dark:text-white">
+                        Futuristic Car Model
+                    </p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">
+                        Generated on: 20 Feb 2026
+                    </p>
+                </div>
+                <button class="text-indigo-600 dark:text-indigo-400 hover:underline">
+                    View
+                </button>
+            </div>
+
+        </div>
+    </div>
+    </section>
+
+</main>
+
+
+    <script>
+        // Initialize Icons
+     
+        // Main View / Tab Switching Logic
+        function switchMainView(viewId) {
+            // Hide all views
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            // Reset all nav buttons
+            const navIds = ['nav-home', 'nav-studio', 'nav-library', 'nav-history'];
+            navIds.forEach(id => {
+                const btn = document.getElementById(id);
+                btn.className = "px-5 py-2 text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white";
+            });
+
+            // Show selected view and activate button
+            document.getElementById(`view-${viewId}`).classList.add('active');
+            const activeBtn = document.getElementById(`nav-${viewId}`);
+           
+            if(viewId === 'studio') {
+                activeBtn.className = "px-5 py-2 text-sm font-medium rounded-lg bg-white dark:bg-indigo-600 shadow-sm text-indigo-600 dark:text-white transition-all";
+            } else {
+                activeBtn.className = "px-5 py-2 text-sm font-medium rounded-lg bg-white dark:bg-white/10 shadow-sm text-slate-800 dark:text-white transition-all";
+            }
+        }
+
+    
+
+        // Left Panel: Mode Switcher (Text vs Image)
+       
+
+        // Right Panel: Tab Switcher (Library vs Insights)
+       
+
+        // Generate Workflow Simulation
+        function generateModel() {
+            const btn = document.getElementById('generate-btn');
+            const emptyState = document.getElementById('empty-state');
+            const procState = document.getElementById('processing-state');
+            const genState = document.getElementById('generated-state');
+            const input = document.getElementById('prompt-input').value;
+
+            if (!input && document.getElementById('content-text').classList.contains('active')) {
+                document.getElementById('prompt-input').classList.add('ring-2', 'ring-red-500');
+                setTimeout(() => document.getElementById('prompt-input').classList.remove('ring-2', 'ring-red-500'), 500);
+                return;
+            }
+
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Synthesizing...</span>`;
+            btn.classList.add('opacity-75', 'cursor-not-allowed');
+            emptyState.classList.add('hidden');
+            genState.classList.add('hidden');
+            procState.classList.remove('hidden');
+            lucide.createIcons();
+
+            setTimeout(() => {
+                procState.classList.add('hidden');
+                genState.classList.remove('hidden');
+                btn.innerHTML = `<i data-lucide="zap" class="w-4 h-4"></i><span>Generate 3D Model</span>`;
+                btn.classList.remove('opacity-75', 'cursor-not-allowed');
+                lucide.createIcons();
+            }, 3000);
+        }
+
+        // Populate Libraries
+        const libraryAssets = [
+            { name: 'Heart Model', type: 'Anatomy', img: 'https://images.unsplash.com/photo-1530026405186-ed1f139313f8?auto=format&fit=crop&q=80&w=400' },
+            { name: 'DNA Helix', type: 'Genetics', img: 'https://images.unsplash.com/photo-1530026405186-ed1f139313f8?auto=format&fit=crop&q=80&w=400' },
+            { name: 'V8 Engine', type: 'Engineering', img: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&q=80&w=400' },
+            { name: 'Colosseum', type: 'Architecture', img: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&q=80&w=400' },
+            { name: 'Atom Structure', type: 'Generic', img: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&q=80&w=400' },
+            { name: 'Solar System', type: 'Generic', img: 'https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?auto=format&fit=crop&q=80&w=400' },
+            { name: 'Tectonic Plates', type: 'Generic', img: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=400' },
+            { name: 'Water Molecule', type: 'Generic', img: 'https://images.unsplash.com/photo-1532187875605-2fe35f743e6a?auto=format&fit=crop&q=80&w=400' }
+        ];
+
+        // Populate Mini Library (sidebar)
+       
+        // Populate Main Library View
+        const mainGrid = document.getElementById('main-asset-grid');
+        libraryAssets.forEach(asset => {
+            mainGrid.innerHTML += `
+                <div class="bg-white dark:bg-[#1a1a1c] rounded-3xl overflow-hidden relative group cursor-pointer border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/20 transition-all aspect-[3/4] flex flex-col shadow-sm">
+                    <div class="absolute top-4 left-4 z-10">
+                        <i data-lucide="bookmark" class="w-5 h-5 text-slate-600 dark:text-white/50 hover:text-slate-900 dark:hover:text-white transition-colors fill-transparent"></i>
+                    </div>
+                    <div class="flex-1 relative bg-slate-100 dark:bg-[#111]">
+                        <img src="${asset.img}" class="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500 mix-blend-multiply dark:mix-blend-normal">
+                        <!-- Dark gradient overlay for bottom text legibility -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-100 dark:opacity-0 dark:group-hover:opacity-100 transition-opacity"></div>
+                    </div>
+                    <div class="absolute bottom-4 left-4 right-4 z-10 flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center shrink-0 shadow-md">
+                            <span class="text-[9px] font-bold text-white">JD</span>
+                        </div>
+                        <span class="text-sm text-slate-800 dark:text-white font-medium truncate drop-shadow-md">RenderGhost</span>
+                    </div>
+                </div>
+            `;
+        });
+        lucide.createIcons(); // Re-init icons for newly injected HTML
+    </script>
+</body>
+</html>

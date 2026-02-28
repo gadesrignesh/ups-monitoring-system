@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Smart AI UPS</title>
+
+<style>
+
+body{
+margin:0;
+background:black;
+color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+flex-direction:column;
+font-family:Arial;
+overflow:hidden;
+}
+
+#title{
+font-size:30px;
+margin-bottom:20px;
+opacity:0;
+animation:fadeIn 2s forwards;
+}
+
+canvas{
+margin-top:20px;
+}
+
+@keyframes fadeIn{
+to{opacity:1;}
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="title">SMART AI UPS MONITORING SYSTEM</div>
+
+<canvas id="wave"></canvas>
+
+<script>
+
+const canvas = document.getElementById("wave");
+const ctx = canvas.getContext("2d");
+
+canvas.width = 600;
+canvas.height = 200;
+
+let phase = 0;
+
+function draw(){
+
+ctx.clearRect(0,0,canvas.width,canvas.height);
+
+// Horizontal center line
+ctx.beginPath();
+ctx.strokeStyle="#555";
+ctx.moveTo(0,100);
+ctx.lineTo(canvas.width,100);
+ctx.stroke();
+
+// Vertical axis
+ctx.beginPath();
+ctx.moveTo(50,0);
+ctx.lineTo(50,200);
+ctx.stroke();
+
+// Sine wave
+ctx.beginPath();
+ctx.strokeStyle="red";
+ctx.lineWidth=3;
+
+for(let x=50;x<canvas.width;x++){
+
+let y = 100 + Math.sin((x*0.03)+phase)*50;
+ctx.lineTo(x,y);
+
+}
+
+ctx.stroke();
+
+phase += 0.05;
+
+requestAnimationFrame(draw);
+}
+
+draw();
+
+// Redirect after 5 seconds
+setTimeout(()=>{
+window.location.href="/home";
+},5000);
+
+</script>
+
+</body>
+</html>
